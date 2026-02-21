@@ -4,6 +4,12 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
 .idea/
 .vscode/
 *.log
+
+# Local secrets (never commit)
+secrets/*
+!secrets/.gitkeep
+client_secret.json
