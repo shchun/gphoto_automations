@@ -1,0 +1,52 @@
+name: Backup Google Photos Favorites
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_month:
+        description: "Start month (YYYY-MM)"
+        required: true
+        type: string
+      end_month:
+        description: "End month (YYYY-MM)"
+        required: true
+        type: string
+  schedule:
+    # 00:15 UTC = 09:15 KST
+    - cron: "15 0 * * *"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run backup
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python scripts/backup_favorites.py --start-month "${{ inputs.start_month }}" --end-month "${{ inputs.end_month }}"
+          else
+            python scripts/backup_favorites.py --recent-months 1
+          fi
+
