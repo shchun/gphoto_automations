@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import tempfile
 from dataclasses import dataclass
 from datetime import date
+
+# Ensure repo root is importable when executed as a script path (e.g. `python scripts/backup_favorites.py`)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from gphoto_backup.auth import GoogleOAuthSecrets, build_credentials
 from gphoto_backup.drive import DriveClient
