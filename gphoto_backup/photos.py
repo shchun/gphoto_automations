@@ -74,7 +74,20 @@ class PhotosClient:
 
         def _once() -> PhotosSearchResult:
             r = self._session.post(url, json=body, timeout=self._timeout_s)
-            r.raise_for_status()
+            try:
+                r.raise_for_status()
+            except requests.HTTPError as e:
+                detail = ""
+                try:
+                    detail = r.text
+                except Exception:
+                    detail = ""
+                if detail:
+                    detail = detail.strip()
+                    if len(detail) > 2000:
+                        detail = detail[:2000] + "...(truncated)"
+                    raise requests.HTTPError(f"{e} | body={detail}", response=r) from e
+                raise
             data = r.json()
             return PhotosSearchResult(
                 media_items=data.get("mediaItems", []) or [],
