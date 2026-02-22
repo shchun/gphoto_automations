@@ -1,4 +1,4 @@
-name: Backup Google Photos Favorites
+name: Backup Google Photos Favorites (Deprecated)
 
 on:
   workflow_dispatch:
@@ -11,9 +11,6 @@ on:
         description: "End month (YYYY-MM)"
         required: true
         type: string
-  schedule:
-    # 00:15 UTC = 09:15 KST
-    - cron: "15 0 * * *"
 
 jobs:
   backup:
@@ -44,9 +41,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            python scripts/backup_favorites.py --start-month "${{ inputs.start_month }}" --end-month "${{ inputs.end_month }}"
-          else
-            python scripts/backup_favorites.py --recent-months 1
-          fi
+          echo "NOTE: Google Photos Library API 기반 Favorites 조회는 정책 변경으로 동작하지 않을 수 있습니다."
+          python scripts/backup_favorites.py --start-month "${{ inputs.start_month }}" --end-month "${{ inputs.end_month }}"
 
