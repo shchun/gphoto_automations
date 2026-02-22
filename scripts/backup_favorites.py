@@ -7,6 +7,8 @@ import tempfile
 from dataclasses import dataclass
 from datetime import date
 
+import requests
+
 # Ensure repo root is importable when executed as a script path (e.g. `python scripts/backup_favorites.py`)
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _REPO_ROOT not in sys.path:
@@ -55,6 +57,19 @@ def _append_actions_summary(md: str) -> None:
             f.write("\n")
 
 
+def _get_access_token_scopes(access_token: str) -> list[str]:
+    # Avoid printing token anywhere; only return scope list for diagnostics.
+    r = requests.get(
+        "https://oauth2.googleapis.com/tokeninfo",
+        params={"access_token": access_token},
+        timeout=30,
+    )
+    r.raise_for_status()
+    info = r.json()
+    scope_str = (info.get("scope") or "").strip()
+    return [s for s in scope_str.split() if s]
+
+
 def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Backup Google Photos Favorites to Google Drive.")
     p.add_argument("--start-month", help="YYYY-MM (manual range start)")
@@ -94,6 +109,20 @@ def main() -> int:
     drive_root_folder_id = _env("DRIVE_FOLDER_ID")
 
     creds = build_credentials(oauth, scopes=[PHOTOS_SCOPE, DRIVE_SCOPE])
+    token_scopes = []
+    try:
+        if creds.token:
+            token_scopes = _get_access_token_scopes(creds.token)
+    except Exception:
+        token_scopes = []
+
+    if PHOTOS_SCOPE not in token_scopes:
+        raise RuntimeError(
+            "Access token is missing required Photos scope. "
+            f"required={PHOTOS_SCOPE} actual_scopes={token_scopes or '[unknown]'} "
+            "(Re-issue refresh token with photoslibrary.readonly and update secrets.)"
+        )
+
     photos = PhotosClient(credentials=creds)
     drive = DriveClient(credentials=creds)
 
